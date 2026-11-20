@@ -1,3 +1,7 @@
+
+
+https://github.com/user-attachments/assets/4b17b33d-a44c-415b-907b-0dd6fd984cc6
+
 <h1 align="center">Focusely</h1>
 <p align="center"><b>Chaque minute compte.</b><br>
 Application mobile de suivi du temps d'étude : chronomètre fiable, Pomodoro, matières, statistiques, XP, badges et défis.</p>
