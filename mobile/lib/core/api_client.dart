@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -14,6 +14,7 @@ Future<String> currentBaseUrl() async {
 Dio createDio() {
   final dio = Dio(BaseOptions(
     baseUrl: baseUrl,
+    persistentConnection: false,
     connectTimeout: const Duration(seconds: 4),
     receiveTimeout: const Duration(seconds: 15),
   ));
@@ -29,13 +30,11 @@ Dio createDio() {
 }
 
 /// Vrai si l'erreur vient d'un probleme de reseau (pas de reponse du serveur).
-bool isOfflineError(Object e) =>
-    e is DioException &&
-    e.response == null &&
-    (e.type == DioExceptionType.connectionError ||
-        e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.sendTimeout ||
-        e.type == DioExceptionType.receiveTimeout);
+bool isOfflineError(Object e) {
+  if (e is! DioException) return false;
+  if (e.response != null) return false; // le serveur a repondu : ce n'est pas un probleme de reseau
+  return e.type != DioExceptionType.cancel && e.type != DioExceptionType.badCertificate;
+}
 
 /// Message lisible a partir d'une erreur Dio
 String errorMessage(Object e) {
