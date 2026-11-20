@@ -1,9 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
 import '../../core/widgets.dart';
 import '../subjects/subjects.dart';
 import '../../core/sync.dart';
+import '../../core/offline_data.dart';
 import '../timer/timer_controller.dart';
 
 class DayStat {
@@ -42,9 +44,14 @@ class Stats {
 
 final statsProvider = FutureProvider.autoDispose<Stats>((ref) async {
   ref.watch(syncProvider.select((s) => s.version));
+  ref.watch(syncProvider.select((s) => s.pending));
   final tz = DateTime.now().timeZoneOffset.inMinutes;
-  final r = await ref.read(dioProvider).get('/api/stats/dashboard', queryParameters: {'tz': tz});
-  return Stats.fromJson(r.data);
+  final data = await cachedGet(ref.read(dioProvider), '/api/stats/dashboard',
+      query: {'tz': tz}, cacheKey: 'stats');
+  // copie profonde : on ajoute ensuite les seances hors-ligne en attente
+  final json = jsonDecode(jsonEncode(data)) as Map<String, dynamic>;
+  await addPendingToStats(json);
+  return Stats.fromJson(json);
 });
 
 const _ranks = ['Novice', 'Curieux', 'Appliqué', 'Persévérant', 'Studieux', 'Expert', 'Maître', 'Légende'];

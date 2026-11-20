@@ -1,16 +1,24 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
 import '../../core/widgets.dart';
 import '../subjects/subjects.dart';
 import '../timer/session_model.dart';
 import '../../core/sync.dart';
+import '../../core/offline_data.dart';
 import '../timer/timer_controller.dart';
 
 final historyProvider = FutureProvider.autoDispose<List<StudySession>>((ref) async {
   ref.watch(syncProvider.select((s) => s.version));
-  final r = await ref.read(dioProvider).get('/api/sessions/history');
-  return (r.data as List).map((j) => StudySession.fromJson(j)).toList();
+  ref.watch(syncProvider.select((s) => s.pending));
+  final data = await cachedGet(ref.read(dioProvider), '/api/sessions/history');
+  final server = (data as List).map((j) => StudySession.fromJson(j)).toList();
+  final ids = server.map((s) => s.id).toSet();
+  // seances faites hors-ligne, pas encore envoyees : on les affiche quand meme
+  final waiting = (await pendingSessions()).where((s) => !ids.contains(s.id)).toList();
+  final all = [...waiting, ...server];
+  all.sort((a, b) => b.startedAt.compareTo(a.startedAt));
+  return all;
 });
 
 class HistoryScreen extends ConsumerWidget {
