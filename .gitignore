@@ -1,5 +1,28 @@
 bin/
 obj/
+.vs/
 .env
 *.user
-.vs/
+# Config locale (mots de passe, cle JWT) : ne jamais publier
+appsettings.Development.json
+
+# .NET
+# Secrets
+*.env
+key.properties
+*.jks
+*.keystore
+# Flutter / Android
+mobile/build/
+mobile/.dart_tool/
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+local.properties
+.gradle/
+# Divers
+*.log
+.idea/
+Thumbs.db
+.DS_Store

@@ -7,6 +7,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<StudySession> StudySessions => Set<StudySession>();
+    public DbSet<Subject> Subjects => Set<Subject>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -14,5 +15,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<User>().HasIndex(u => u.Username).IsUnique();
         b.Entity<StudySession>().HasIndex(s => new { s.UserId, s.StartedAtUtc });
         b.Entity<StudySession>().Property(s => s.Mode).HasConversion<string>();
+        b.Entity<Subject>().HasIndex(s => new { s.UserId, s.Name }).IsUnique();
+        b.Entity<StudySession>()
+            .HasOne<Subject>().WithMany()
+            .HasForeignKey(s => s.SubjectId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

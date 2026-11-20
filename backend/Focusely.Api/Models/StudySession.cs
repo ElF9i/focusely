@@ -7,6 +7,7 @@ public class StudySession
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public User? User { get; set; }
+    public Guid? SubjectId { get; set; }
     public SessionMode Mode { get; set; }
     public DateTime StartedAtUtc { get; set; }
     public DateTime? PausedAtUtc { get; set; }
