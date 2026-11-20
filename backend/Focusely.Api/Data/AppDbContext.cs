@@ -8,6 +8,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<User> Users => Set<User>();
     public DbSet<StudySession> StudySessions => Set<StudySession>();
     public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<StudyChallenge> StudyChallenges => Set<StudyChallenge>();
+    public DbSet<ChallengeParticipant> ChallengeParticipants => Set<ChallengeParticipant>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -20,5 +22,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne<Subject>().WithMany()
             .HasForeignKey(s => s.SubjectId)
             .OnDelete(DeleteBehavior.SetNull);
+        b.Entity<StudyChallenge>().Property(c => c.Type).HasConversion<string>();
+        b.Entity<StudyChallenge>().HasIndex(c => c.EndsAtUtc);
+        b.Entity<ChallengeParticipant>().HasKey(p => new { p.ChallengeId, p.UserId });
     }
 }

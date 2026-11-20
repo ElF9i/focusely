@@ -1,9 +1,10 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
 import '../../core/widgets.dart';
+import '../challenges/challenges_screen.dart';
 import '../history/history_screen.dart';
 import '../stats/stats_screen.dart';
 import '../subjects/subjects.dart';
@@ -64,6 +65,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         final done = await ref.read(timerProvider.notifier).stop();
         ref.invalidate(statsProvider);
         ref.invalidate(historyProvider);
+        ref.invalidate(challengesProvider);
+        ref.invalidate(badgesProvider);
+        ref.invalidate(leaderboardProvider);
         if (!mounted) return;
         final xp = (done.studySeconds ~/ 60) * 2 + 10;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
@@ -218,6 +219,12 @@ Future<void> addPendingToStats(Map<String, dynamic> j) async {
       if (d['date'] == key) d['seconds'] = (d['seconds'] as int) + sec;
     }
   }
+  // niveau recalcule comme le serveur : floor(sqrt(xp / 50)) + 1
+  final xpNow = j['xp'] as int;
+  final lvl = sqrt(xpNow / 50).floor() + 1;
+  j['level'] = lvl;
+  j['levelXp'] = 50 * (lvl - 1) * (lvl - 1);
+  j['nextLevelXp'] = 50 * lvl * lvl;
   // la serie compte les jours avec au moins 10 min : si aujourd'hui passe le seuil, +1
   if (todayBefore < 600 && (j['todaySeconds'] as int) >= 600) {
     j['streak'] = (j['streak'] as int) + 1;

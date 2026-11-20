@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/api_client.dart';
@@ -7,6 +7,7 @@ import 'core/sync_banner.dart';
 import 'core/widgets.dart';
 import 'features/auth/auth_repository.dart';
 import 'features/auth/login_screen.dart';
+import 'features/challenges/challenges_screen.dart';
 import 'features/history/history_screen.dart';
 import 'features/stats/stats_screen.dart';
 import 'features/timer/timer_screen.dart';
@@ -98,6 +99,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
         TimerScreen(onLogout: widget.onLogout),
         const StatsScreen(),
         const HistoryScreen(),
+        const ChallengesScreen(),
       ]),
       bottomNavigationBar: Column(mainAxisSize: MainAxisSize.min, children: [
         const SyncBanner(),
@@ -108,6 +110,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
             NavigationDestination(icon: Icon(Icons.timer_outlined), selectedIcon: Icon(Icons.timer), label: 'Focus'),
             NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights), label: 'Stats'),
             NavigationDestination(icon: Icon(Icons.history), label: 'Historique'),
+            NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events), label: 'D\u00E9fis'),
           ],
         ),
       ]),
