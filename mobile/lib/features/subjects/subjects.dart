@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
 import '../../core/offline_data.dart';
+import '../../core/sync.dart';
 import '../timer/timer_controller.dart';
 
 class Subject {
@@ -18,8 +19,11 @@ Color hexColor(String hex) {
 }
 
 final subjectsProvider = FutureProvider<List<Subject>>((ref) async {
-  final data = await cachedGet(ref.read(dioProvider), '/api/subjects');
-  return (data as List).map((j) => Subject.fromJson(j)).toList();
+  ref.watch(syncProvider.select((s) => s.version));
+  final data = await cachedGet(ref.read(dioProvider), '/api/subjects',
+      preferCache: true, fallback: <dynamic>[]);
+  final merged = await subjectsWithOps(data as List);
+  return merged.map((j) => Subject.fromJson(Map<String, dynamic>.from(j as Map))).toList();
 });
 
 const _emojis = ['📘', '🧮', '💻', '🧪', '🌍', '🎨', '🎵', '📝', '⚙️', '🩺', '⚖️', '🗣️'];
@@ -80,9 +84,12 @@ Future<void> showAddSubjectDialog(BuildContext context, WidgetRef ref) async {
             onPressed: () async {
               if (name.text.trim().isEmpty) return;
               try {
-                await ref.read(dioProvider).post('/api/subjects',
-                    data: {'name': name.text.trim(), 'color': color, 'emoji': emoji});
+                // toujours enregistre sur le telephone d'abord, envoye au serveur des que possible
+                await queueSubjectAdd(name.text.trim(), color, emoji);
                 ref.invalidate(subjectsProvider);
+                final sync = ref.read(syncProvider.notifier);
+                await sync.refresh();
+                sync.syncNow();
                 if (ctx.mounted) Navigator.pop(ctx);
               } catch (e) {
                 if (ctx.mounted) {
@@ -111,7 +118,10 @@ Future<void> confirmDeleteSubject(BuildContext context, WidgetRef ref, Subject s
     ),
   );
   if (ok == true) {
-    await ref.read(dioProvider).delete('/api/subjects/${s.id}');
+    await queueSubjectDelete(s.id);
     ref.invalidate(subjectsProvider);
+    final sync = ref.read(syncProvider.notifier);
+    await sync.refresh();
+    sync.syncNow();
   }
 }

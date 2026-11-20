@@ -47,7 +47,7 @@ final statsProvider = FutureProvider.autoDispose<Stats>((ref) async {
   ref.watch(syncProvider.select((s) => s.pending));
   final tz = DateTime.now().timeZoneOffset.inMinutes;
   final data = await cachedGet(ref.read(dioProvider), '/api/stats/dashboard',
-      query: {'tz': tz}, cacheKey: 'stats');
+      query: {'tz': tz}, cacheKey: 'stats', fallback: emptyStats());
   // copie profonde : on ajoute ensuite les seances hors-ligne en attente
   final json = jsonDecode(jsonEncode(data)) as Map<String, dynamic>;
   await addPendingToStats(json);

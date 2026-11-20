@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,26 +61,16 @@ class TimerController extends Notifier<TimerState> {
   }
 
   Future<void> start({String mode = 'Focus', int? target, String? subjectId}) async {
-    final id = const Uuid().v4(); // genere cote client : sert d'identifiant d'idempotence
-    try {
-      final r = await _dio.post('/api/sessions/start', data: {
-        'id': id,
-        'mode': mode,
-        'targetSeconds': target,
-        'subjectId': subjectId,
-      });
-      _set(StudySession.fromJson(r.data));
-    } catch (e) {
-      if (!isOfflineError(e)) rethrow;
-      // Pas de reseau : on demarre la seance sur le telephone
-      final s = StudySession(
-        id: id, mode: mode, subjectId: subjectId,
-        startedAt: DateTime.now().toUtc(), pausedSeconds: 0, targetSeconds: target,
-        studySeconds: 0, isValidated: false, serverOffset: Duration.zero, local: true,
-      );
-      await _persist(s);
-      _set(s);
-    }
+    // LOCAL-FIRST : la seance demarre toujours sur le telephone, sans attendre le reseau.
+    // L'id genere ici sert de cle d'idempotence : le serveur la recoit a la fin (/import).
+    final id = const Uuid().v4();
+    final s = StudySession(
+      id: id, mode: mode, subjectId: subjectId,
+      startedAt: DateTime.now().toUtc(), pausedSeconds: 0, targetSeconds: target,
+      studySeconds: 0, isValidated: false, serverOffset: Duration.zero, local: true,
+    );
+    await _persist(s);
+    _set(s);
   }
 
   Future<void> pause() async {

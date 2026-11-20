@@ -11,7 +11,7 @@ import '../timer/timer_controller.dart';
 final historyProvider = FutureProvider.autoDispose<List<StudySession>>((ref) async {
   ref.watch(syncProvider.select((s) => s.version));
   ref.watch(syncProvider.select((s) => s.pending));
-  final data = await cachedGet(ref.read(dioProvider), '/api/sessions/history');
+  final data = await cachedGet(ref.read(dioProvider), '/api/sessions/history', fallback: <dynamic>[]);
   final server = (data as List).map((j) => StudySession.fromJson(j)).toList();
   final ids = server.map((s) => s.id).toSet();
   // seances faites hors-ligne, pas encore envoyees : on les affiche quand meme
