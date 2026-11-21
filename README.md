@@ -6,13 +6,13 @@ Application mobile de suivi du temps d'étude : chronomètre fiable, Pomodoro, m
 
 ## Vidéo de découverte
 
-<p align="center">
+/* <p align="center">
   <video src="https://github.com/ElF9i/focusely/raw/main/docs/Focusely_decouverte.mp4" controls muted width="320">
     Ton navigateur ne lit pas la video.
   </video>
 </p>
 
-> Si la video ne s'affiche pas, [ouvre-la directement](docs/Focusely_decouverte.mp4).
+> Si la video ne s'affiche pas, [ouvre-la directement](docs/Focusely_decouverte.mp4). */
 
 ## Fonctions
 
