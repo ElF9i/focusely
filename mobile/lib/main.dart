@@ -7,7 +7,6 @@ import 'core/sync_banner.dart';
 import 'core/widgets.dart';
 import 'features/auth/auth_repository.dart';
 import 'features/auth/login_screen.dart';
-import 'features/challenges/challenges_screen.dart';
 import 'features/history/history_screen.dart';
 import 'features/planner/planner_screen.dart';
 import 'features/profile/profile_screen.dart';
@@ -76,7 +75,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Future.microtask(() => ref.read(syncProvider.notifier).syncNow());
-    // Tant qu'il reste des seances en attente, on reessaie toutes les 30 s
+    // Tant qu'il reste des elements en attente, on reessaie toutes les 30 s
     _syncTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (ref.read(syncProvider).pending > 0) ref.read(syncProvider.notifier).syncNow();
     });
@@ -94,29 +93,34 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
     if (state == AppLifecycleState.resumed) ref.read(syncProvider.notifier).syncNow();
   }
 
+  void _go(int i) => setState(() => _index = i);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Les 5 pages restent en memoire : on garde ta saisie et ton defilement en changeant d'onglet
       body: IndexedStack(index: _index, children: [
         TimerScreen(onLogout: widget.onLogout),
         const StatsScreen(),
         const HistoryScreen(),
-        PlannerScreen(onOpenTimer: () => setState(() => _index = 0)),
+        PlannerScreen(onOpenTimer: () => _go(0)),
         ProfileScreen(onLogout: widget.onLogout),
-        const ChallengesScreen(),
       ]),
       bottomNavigationBar: Column(mainAxisSize: MainAxisSize.min, children: [
         const SyncBanner(),
         NavigationBar(
+          height: 68,
           selectedIndex: _index,
-          onDestinationSelected: (i) => setState(() => _index = i),
+          onDestinationSelected: _go,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          backgroundColor: const Color(0xF20B0B1E),
+          indicatorColor: AppColors.accent.withValues(alpha: 0.35),
           destinations: const [
             NavigationDestination(icon: Icon(Icons.timer_outlined), selectedIcon: Icon(Icons.timer), label: 'Focus'),
             NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights), label: 'Stats'),
-            NavigationDestination(icon: Icon(Icons.history), label: 'Historique'),
+            NavigationDestination(icon: Icon(Icons.history), selectedIcon: Icon(Icons.history_toggle_off), label: 'Historique'),
             NavigationDestination(icon: Icon(Icons.event_note_outlined), selectedIcon: Icon(Icons.event_note), label: 'Planning'),
             NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profil'),
-            NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events), label: 'D\u00E9fis'),
           ],
         ),
       ]),

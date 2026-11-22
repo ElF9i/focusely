@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
+import '../../core/offline_data.dart';
 import '../../core/widgets.dart';
 import '../challenges/challenges_screen.dart';
 import '../history/history_screen.dart';
@@ -27,13 +28,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   Timer? _breakTicker;
 
   static const _focusChoices = [15, 25, 45, 60, 90];
-  static const _pomoWork = 25;
-  static const _pomoBreak = 5;
+  int _pomoWork = 25;
+  int _pomoBreak = 5;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() => _run(() => ref.read(timerProvider.notifier).restore()));
+    _loadPrefs();
   }
 
   @override
@@ -42,6 +44,115 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     super.dispose();
   }
 
+    Future<void> _loadPrefs() async {
+    final v = await DataCache.instance.get('settings:timer');
+    if (v is! Map || !mounted) return;
+    setState(() {
+      _minutes = ((v['minutes'] as num?)?.toInt() ?? _minutes).clamp(1, 600).toInt();
+      _pomoWork = ((v['pomoWork'] as num?)?.toInt() ?? _pomoWork).clamp(1, 180).toInt();
+      _pomoBreak = ((v['pomoBreak'] as num?)?.toInt() ?? _pomoBreak).clamp(1, 60).toInt();
+    });
+  }
+
+  Future<void> _savePrefs() => DataCache.instance
+      .put('settings:timer', {'minutes': _minutes, 'pomoWork': _pomoWork, 'pomoBreak': _pomoBreak});
+
+  /// Fenetre "duree personnalisee" : saisie au clavier, boutons -5 / +5 et raccourcis.
+  Future<void> _askMinutes(int initial, ValueChanged<int> onPicked,
+      {String title = 'Durée (minutes)', int min = 1, int max = 600}) async {
+    final c = TextEditingController(text: '$initial');
+    var value = initial;
+    final res = await showDialog<int>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: Text(title),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              IconButton.filledTonal(
+                onPressed: () => setS(() {
+                  value = ((int.tryParse(c.text) ?? value) - 5).clamp(min, max).toInt();
+                  c.text = '$value';
+                }),
+                icon: const Icon(Icons.remove),
+              ),
+              SizedBox(
+                width: 100,
+                child: TextField(
+                  controller: c,
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+                  decoration: const InputDecoration(suffixText: 'min'),
+                  onChanged: (v) => value = int.tryParse(v) ?? value,
+                ),
+              ),
+              IconButton.filledTonal(
+                onPressed: () => setS(() {
+                  value = ((int.tryParse(c.text) ?? value) + 5).clamp(min, max).toInt();
+                  c.text = '$value';
+                }),
+                icon: const Icon(Icons.add),
+              ),
+            ]),
+            const SizedBox(height: 14),
+            Wrap(spacing: 8, runSpacing: 4, children: [
+              for (final p in [10, 20, 30, 50, 75, 120])
+                if (p >= min && p <= max)
+                  ActionChip(
+                    label: Text('$p min'),
+                    onPressed: () => setS(() {
+                      value = p;
+                      c.text = '$p';
+                    }),
+                  ),
+            ]),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, (int.tryParse(c.text) ?? value).clamp(min, max).toInt()),
+              child: const Text('Valider'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (res != null) onPicked(res);
+  }
+
+  Widget _pomoPicker() => Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Wrap(spacing: 8, children: [
+          ActionChip(
+            avatar: const Icon(Icons.work_outline, size: 18),
+            label: Text('Travail $_pomoWork min'),
+            onPressed: () => _askMinutes(
+              _pomoWork,
+              (v) => setState(() {
+                _pomoWork = v;
+                _savePrefs();
+              }),
+              title: 'Durée de travail',
+              max: 180,
+            ),
+          ),
+          ActionChip(
+            avatar: const Icon(Icons.coffee_outlined, size: 18),
+            label: Text('Pause $_pomoBreak min'),
+            onPressed: () => _askMinutes(
+              _pomoBreak,
+              (v) => setState(() {
+                _pomoBreak = v;
+                _savePrefs();
+              }),
+              title: 'Durée de pause',
+              max: 60,
+            ),
+          ),
+        ]),
+      );
   Future<void> _run(Future<void> Function() action) async {
     try {
       await action();
@@ -79,7 +190,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
       });
 
   void _startBreak() {
-    _breakEnd = DateTime.now().add(const Duration(minutes: _pomoBreak));
+    _breakEnd = DateTime.now().add(Duration(minutes: _pomoBreak));
     _breakTicker?.cancel();
     _breakTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
@@ -226,19 +337,27 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
             if (_mode == 'Focus') ...[
               const SizedBox(height: 8),
               Wrap(spacing: 8, children: [
-                for (final m in _focusChoices)
+                for (final m in [..._focusChoices, 0])
                   ChoiceChip(
-                    label: Text('$m min'),
-                    selected: _minutes == m,
-                    onSelected: (_) => setState(() => _minutes = m),
+                    label: Text(m == 0 ? (_focusChoices.contains(_minutes) ? 'Autre…' : '$_minutes min') : '$m min'),
+                    selected: m == 0 ? !_focusChoices.contains(_minutes) : _minutes == m,
+                    onSelected: (_) {
+                      if (m == 0) {
+                        _askMinutes(_minutes, (v) => setState(() {
+                              _minutes = v;
+                              _savePrefs();
+                            }));
+                      } else {
+                        setState(() {
+                          _minutes = m;
+                          _savePrefs();
+                        });
+                      }
+                    },
                   ),
               ]),
             ],
-            if (_mode == 'Pomodoro')
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text('25 min de travail · 5 min de pause', style: TextStyle(color: Colors.white70)),
-              ),
+            if (_mode == 'Pomodoro') _pomoPicker(),
             const SizedBox(height: 12),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
