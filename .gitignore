@@ -26,3 +26,7 @@ local.properties
 .idea/
 Thumbs.db
 .DS_Store
+
+# Sauvegardes
+backups/
+deploy/nginx/certs/
