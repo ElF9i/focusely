@@ -70,9 +70,7 @@ docker-compose.yml      base PostgreSQL
 - [ ] Amis, Study Rooms et chat (SignalR)
 - [ ] Notifications, ambiances sonores, planificateur
 
-## Sécurité
 
-Le mot de passe de développement et la clé JWT sont des valeurs d'exemple : ne les utilise pas en production, et garde le dépôt privé tant qu'ils sont dans le code.
 
 https://github.com/user-attachments/assets/4b17b33d-a44c-415b-907b-0dd6fd984cc6
 
